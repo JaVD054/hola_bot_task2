@@ -143,12 +143,13 @@ def aruco_feedback_Cb(msg):
 
 def inverse_kinematics(w,v_x,v_y,kp):
 	global right_wheel_pub, left_wheel_pub, front_wheel_pub
-	h = numpy.array([[-0.17483,1,0],[-0.17483,-.5,-.86602540378],[-0.17483,-.5,.86602540378]])@numpy.array([[w,],[v_x,],[v_y,]])
-	vels =numpy.dot(kp,h)
+	h = numpy.array([[-0.17483,1,0],
+					[-0.17483,-.5,-.86602540378],
+					[-0.17483,-.5,.86602540378]])
+	l = numpy.array([[w,],[v_x,],[v_y,]])
+	forces =numpy.dot(1/.05,h@l)
 	return [
-		list([float(vels[0])*math.sin(0),float(vels[0])*math.cos(0)]),
-		list([float(vels[1])*math.cos(((-2)*math.pi/3)),float(vels[1])*math.sin(-2*math.pi/3+0)]),
-		list([float(vels[2])*math.cos((math.pi)/3+0),float(vels[2])*math.sin(2*math.pi/3+0)]),
+		forces[0][0],forces[1][0],forces[2][0]
 	]
 	
 	
@@ -221,12 +222,9 @@ def main():
 		
 		f_F,r_F,l_F = inverse_kinematics(0,2,0,kp=5)
 		print(f_F,r_F,l_F,sep='\n')
-		r_force.force.x = r_F[0]
-		r_force.force.y = r_F[1]
-		l_force.force.x = l_F[0]
-		l_force.force.y = l_F[1]
-		f_force.force.x = f_F[0]
-		f_force.force.y = f_F[1]
+		r_force.force.x = r_F
+		l_force.force.x = l_F
+		f_force.force.x = f_F
 
 		right_wheel_pub.publish(r_force)
 		front_wheel_pub.publish(l_force)
