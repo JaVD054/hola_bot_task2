@@ -51,7 +51,7 @@ catkin_package(
 ### BUILD ###
 
 add_library(custom_force src/custom_force.cpp)
-add_dependencies(custom_force your_package_name_custom_force_cpp)
+add_dependencies(custom_force hola_bot_custom_force_cpp)
 target_link_libraries (custom_force ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 
 ### INSTALL ###

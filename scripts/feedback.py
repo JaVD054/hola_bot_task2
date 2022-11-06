@@ -27,7 +27,7 @@
 
 ######################## IMPORT MODULES ##########################
 
-import numpy				# If you find it required
+import numpy as np			# If you find it required
 import rospy 				
 from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
 from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
@@ -41,6 +41,10 @@ from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected posi
 aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 aruco_msg = Pose2D()
 
+# cv
+marker_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
+param_markers = aruco.DetectorParameters_create()
+
 ##################### FUNCTION DEFINITIONS #######################
 
 # NOTE :  You may define multiple helper functions here and use in your code
@@ -50,9 +54,37 @@ def callback(data):
 	br = CvBridge()
 	rospy.loginfo("Image Received")
 	get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
-	current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
-	cv2.imshow("image",current_frame)
-	cv2.waitKey(1)
+	frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
+	# gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	marker_corners, marker_IDs, reject = aruco.detectMarkers(frame, marker_dict, parameters=param_markers)
+	if marker_corners:
+		for ids, corners in zip(marker_IDs, marker_corners):
+			cv2.polylines(
+				frame, [corners.astype(np.int32)], True, (0, 255, 255), 4, cv2.LINE_AA
+			)
+			# print(corners.astype(np.int32))
+			corners = corners.reshape(4, 2)
+			corners = corners.astype(int)
+			top_left = corners[0].ravel()
+			top_right = corners[1].ravel()
+			bottom_right = corners[2].ravel()
+			bottom_left = corners[3].ravel()
+			# print(top_right,top_left,bottom_right,bottom_left)
+			cv2.putText(frame, f"id: {ids[0]}", top_right, cv2.FONT_HERSHEY_PLAIN, 1.3, (200, 100, 0), 2, cv2.LINE_AA,)
+			# print(ids, "  ", corners)
+
+	d = (int((top_right[0]+bottom_left[0])/2), int((top_right[1]+bottom_left[1])/2))
+	# d2 = (int((top_left[0]+bottom_right[0])/2), int((top_left[1]+bottom_right[1])/2))
+	
+	cv2.imshow("frame", frame)
+	key = cv2.waitKey(1)
+	aruco_msg.x = d[0]
+	aruco_msg.y = d[1]
+	aruco_msg.theta = math.atan((top_right[1]-top_left[1])/(top_right[0]-top_left[0]))
+	aruco_publisher.publish(aruco_msg)
+	print(aruco_msg)
+	# cv2.imshow("image",frame)
+	# cv2.waitKey(1)
 
 
 	

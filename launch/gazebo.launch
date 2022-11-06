@@ -10,7 +10,7 @@
     name="spawn_model"
     pkg="gazebo_ros"
     type="spawn_model"
-    args="-file $(find hola_bot)/urdf/hola_bot.urdf -urdf -model hola_bot -x 0 -y -.75 -z 0"
+    args="-file $(find hola_bot)/urdf/hola_bot.urdf -urdf -model hola_bot -x 0 -y -0 -z 0"
     launch-prefix="bash -c 'sleep 5; $0 $@' "
     />
 </launch>

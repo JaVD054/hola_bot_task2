@@ -31,17 +31,19 @@ import rospy
 import signal		# To handle Signals by OS/user
 import sys		# To handle Signals by OS/user
 
-from geometry_msgs.msg import Wrench,Twist		# Message type used for publishing force vectors
+from geometry_msgs.msg import Wrench	# Message type used for publishing force vectors
 from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 
+#import pid
+
+import numpy
 import time
 import math		# If you find it useful
 
 from tf.transformations import euler_from_quaternion	# Convert angles
 
 ################## GLOBAL VARIABLES ######################
-from feedback import aruco_msg
 
 
 PI = 3.14
@@ -50,9 +52,13 @@ x_goals = []
 y_goals = []
 theta_goals = []
 
-right_wheel_pub = None
-left_wheel_pub = None
-front_wheel_pub = None
+right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
+front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
+left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
+
+hola_theta = 0
+hola_x = 0
+hola_y = 0
 
 
 ##################### FUNCTION DEFINITIONS #######################
@@ -60,14 +66,41 @@ front_wheel_pub = None
 # NOTE :  You may define multiple helper functions here and use in your code
 
 def signal_handler(sig, frame):
-	  
+	
 	# NOTE: This function is called when a program is terminated by "Ctr+C" i.e. SIGINT signal 	
 	print('Clean-up !')
 	cleanup()
 	sys.exit(0)
 
 def cleanup():
-	pass
+	r_force = Wrench()
+	l_force = Wrench()
+	f_force = Wrench()
+
+	r_force.force.x = 0	
+	r_force.force.y = 0
+	r_force.force.z = 0
+	r_force.torque.x = 0
+	r_force.torque.y = 0
+	r_force.torque.z = 0
+
+	l_force.force.x = 0
+	l_force.force.y = 0
+	l_force.force.z = 0
+	l_force.torque.x = 0
+	l_force.torque.y = 0
+	l_force.torque.z = 0
+
+	f_force.force.x = 0
+	f_force.force.y = 0
+	f_force.force.z = 0
+	f_force.torque.x = 0
+	f_force.torque.y = 0
+	f_force.torque.z = 0
+
+	right_wheel_pub.publish(r_force)
+	front_wheel_pub.publish(l_force)
+	left_wheel_pub.publish(f_force)
 	############ ADD YOUR CODE HERE ############
 
 	# INSTRUCTIONS & HELP : 
@@ -93,7 +126,10 @@ def task2_goals_Cb(msg):
 		theta_goals.append(theta_goal)
 
 def aruco_feedback_Cb(msg):
-	pass
+	global hola_theta, hola_x, hola_y
+	hola_theta = msg.theta
+	hola_x = msg.x
+	hola_y = msg.y
 	############ ADD YOUR CODE HERE ############
 
 	# INSTRUCTIONS & HELP : 
@@ -105,8 +141,17 @@ def aruco_feedback_Cb(msg):
 
 
 
-def inverse_kinematics():
-	pass
+def inverse_kinematics(w,v_x,v_y,kp):
+	global right_wheel_pub, left_wheel_pub, front_wheel_pub
+	h = numpy.array([[-0.17483,1,0],[-0.17483,-.5,-.86602540378],[-0.17483,-.5,.86602540378]])@numpy.array([[w,],[v_x,],[v_y,]])
+	vels =numpy.dot(kp,h)
+	return [
+		list([float(vels[0])*math.sin(0),float(vels[0])*math.cos(0)]),
+		list([float(vels[1])*math.cos(((-2)*math.pi/3)),float(vels[1])*math.sin(-2*math.pi/3+0)]),
+		list([float(vels[2])*math.cos((math.pi)/3+0),float(vels[2])*math.sin(2*math.pi/3+0)]),
+	]
+	
+	
 	############ ADD YOUR CODE HERE ############
 
 	# INSTRUCTIONS & HELP : 
@@ -127,7 +172,6 @@ def main():
 	right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 	front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
 	left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
-	vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
 	rospy.Subscriber('detected_aruco',Pose2D,aruco_feedback_Cb)
 	rospy.Subscriber('task2_goals',PoseArray,task2_goals_Cb)
@@ -143,23 +187,50 @@ def main():
 	# 	-> In this task you have to further implement (Inverse Kinematics!)
 	#      find three omni-wheel velocities (v1, v2, v3) = left/right/center_wheel_force (assumption to simplify)
 	#      given velocity of the chassis (Vx, Vy, W)
-	vel = Twist()
-	vel.linear.x = .5
-	vel.linear.y = 0.0
-	vel.linear.z = 0.0
-	vel.angular.x = 0.0
-	vel.angular.y = 0.0
-	vel.angular.z = 2
+	r_force = Wrench()
+	l_force = Wrench()
+	f_force = Wrench()
+
+	r_force.force.x = 0	
+	r_force.force.y = 0
+	r_force.force.z = 0
+	r_force.torque.x = 0
+	r_force.torque.y = 0
+	r_force.torque.z = 0
+
+	l_force.force.x = 0
+	l_force.force.y = 0
+	l_force.force.z = 0
+	l_force.torque.x = 0
+	l_force.torque.y = 0
+	l_force.torque.z = 0
+
+	f_force.force.x = 0
+	f_force.force.y = 0
+	f_force.force.z = 0
+	f_force.torque.x = 0
+	f_force.torque.y = 0
+	f_force.torque.z = 0
+
+	right_wheel_pub.publish(r_force)
+	front_wheel_pub.publish(l_force)
+	left_wheel_pub.publish(f_force)
 
 		
 	while not rospy.is_shutdown():
-		# r_force = Wrench()
-		# l_force = Wrench()
-		# f_force = Wrench()
-		vel_pub.publish(vel)
-		# right_wheel_pub.publish()
-		# front_wheel_pub.publish()
-		# left_wheel_pub.publish()
+		
+		f_F,r_F,l_F = inverse_kinematics(0,2,0,kp=5)
+		print(f_F,r_F,l_F,sep='\n')
+		r_force.force.x = r_F[0]
+		r_force.force.y = r_F[1]
+		l_force.force.x = l_F[0]
+		l_force.force.y = l_F[1]
+		f_force.force.x = f_F[0]
+		f_force.force.y = f_F[1]
+
+		right_wheel_pub.publish(r_force)
+		front_wheel_pub.publish(l_force)
+		left_wheel_pub.publish(f_force)
 		
 		# Calculate Error from feedback
 
