@@ -38,7 +38,7 @@ from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected posi
 
 ############################ GLOBALS #############################
 
-aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
+aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=100)
 aruco_msg = Pose2D()
 
 # cv
@@ -80,7 +80,7 @@ def callback(data):
 	key = cv2.waitKey(1)
 	aruco_msg.x = d[0]
 	aruco_msg.y = d[1]
-	aruco_msg.theta = math.atan((top_right[1]-top_left[1])/(top_right[0]-top_left[0]))
+	aruco_msg.theta = math.atan2(top_right[1]-top_left[1], top_right[0]-top_left[0])
 	aruco_publisher.publish(aruco_msg)
 	print(aruco_msg)
 	# cv2.imshow("image",frame)
