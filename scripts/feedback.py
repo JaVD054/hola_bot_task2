@@ -53,9 +53,9 @@ def callback(data):
 	# Bridge is Used to Convert ROS Image message to OpenCV image
 	br = CvBridge()
 	rospy.loginfo("Image Received")
-	get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
-	frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
-	# gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	get_frame = br.imgmsg_to_cv2(data, "passthrough")		# Receiving raw image in a "grayscale" format
+	# frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
+	frame = cv2.cvtColor(get_frame, cv2.COLOR_BGR2GRAY)
 	marker_corners, marker_IDs, reject = aruco.detectMarkers(frame, marker_dict, parameters=param_markers)
 	if marker_corners:
 		for ids, corners in zip(marker_IDs, marker_corners):
@@ -76,10 +76,10 @@ def callback(data):
 	d = (int((top_right[0]+bottom_left[0])/2), int((top_right[1]+bottom_left[1])/2))
 	# d2 = (int((top_left[0]+bottom_right[0])/2), int((top_left[1]+bottom_right[1])/2))
 	
-	cv2.imshow("frame", frame)
+	# cv2.imshow("frame", frame)
 	key = cv2.waitKey(1)
-	aruco_msg.x = d[0]
-	aruco_msg.y = d[1]
+	aruco_msg.x = int(d[0]*500/1280)
+	aruco_msg.y = int(d[1]*500/1280)
 	aruco_msg.theta = math.atan2(top_right[1]-top_left[1], top_right[0]-top_left[0])
 	aruco_publisher.publish(aruco_msg)
 	print(aruco_msg)

@@ -27,14 +27,18 @@ hola_x = 0
 hola_y = 0
 hola_theta = 0
 
-x_goals = [350,50,50,350,250]
-y_goals = [350,350,50,50,250]
-theta_goals = [0.785, 2.335, -3, 3, 0]
+# x_goals = [350,50,50,350,250]
+# y_goals = [350,350,50,50,250]
+# theta_goals = [0.785, 2.335, -3, 3, 0]
+x_goals = []
+y_goals = []
+theta_goals = []
+
 
 right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
 left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
-rate = rospy.Rate(100)
+rate = rospy.Rate(1000)
 
 
 
@@ -101,28 +105,29 @@ def linear_vel_y(goal_x, goal_y, constant=2):
 
 
 def angular_vel(goal_theta, constant=3):
-    return constant * (goal_theta-hola_theta)
+    return constant * (hola_theta-goal_theta)
 
 
 def PID(Kp, Ki, Kd, MV_bar=0):
-    e_prev = 0
-    t_prev = -100
-    I = 0
+	e_prev = 0
+	t_prev = -100
+	I = 0
     
-    MV = MV_bar
+	MV = MV_bar
     
-    while True:
-        PV, SP = yield MV
-        
-        e =  PV - SP
-        
-        P = Kp*e
-        I = I + Ki*e
-        D = Kd*(e - e_prev)
-        
-        MV = MV_bar + P + I + D
+	while True:
+		t,PV, SP = yield MV
 
-        e_prev = e
+		e =  PV - SP
+
+		P = Kp*e
+		I = I + Ki*e
+		D = Kd*(e - e_prev)/(t - t_prev)
+
+		MV = MV_bar + P + I + D
+
+		e_prev = e
+		t_prev = t
     
 
 
@@ -151,18 +156,18 @@ def move2goal(x_goal, y_goal, theta_goal):
 	rospy.loginfo("Current: x: %d, y: %d, theta: %f", hola_x, hola_y, hola_theta)
 
 	distance_tolerance = 0.1
-	angle_tolerance = 0.01
+	angle_tolerance = 0.02
 
 	f_force = Wrench()
 	r_force = Wrench()
 	l_force = Wrench()
 
-	pid = PID(5.6, 0.00001,0.00001)
+	pid = PID(2, 0.00008,0.000008)
 	pid.send(None)
 	error =euclidean_distance(x_goal, y_goal,hola_x,hola_y) 
 	while error>= distance_tolerance or abs(hola_theta-theta_goal) > angle_tolerance:
 		# print("x: ", hola_x, "y: ", hola_y, "theta: ", hola_theta)
-		forces = inverse_kinematics(linear_vel_x(x_goal, y_goal,error/5), linear_vel_y(x_goal, y_goal,error/5), pid.send([hola_theta,theta_goal]),10)
+		forces = inverse_kinematics(linear_vel_x(x_goal, y_goal,error/5), linear_vel_y(x_goal, y_goal,error/5), pid.send([time.time(),hola_theta,theta_goal]),15)
 		f_force.force.x = forces[1][0]
 		r_force.force.x = forces[2][0]
 		l_force.force.x = forces[0][0]
@@ -174,9 +179,9 @@ def move2goal(x_goal, y_goal, theta_goal):
 		rate.sleep()
 	print( hola_x, hola_y, hola_theta)
 	print("Goal reached")
-	
+	pid.close()
 	cleanup()
-	sleep(3)
+	sleep(2.5)
 
 
 def main():
