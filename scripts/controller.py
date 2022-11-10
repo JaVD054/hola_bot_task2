@@ -1,5 +1,31 @@
 #!/usr/bin/env python3
 
+
+'''
+*****************************************************************************************
+*
+*        		===============================================
+*           		    HolA Bot (HB) Theme (eYRC 2022-23)
+*        		===============================================
+*
+*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
+*
+*  This software is made available on an "AS IS WHERE IS BASIS".
+*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
+*  any and all claim(s) that emanate from the use of the Software or
+*  breach of the terms of this agreement.
+*
+*****************************************************************************************
+'''
+
+# Team ID:		HB_1023
+# Author List:	[ Chirutha Kottantharayil, Varghese Binu, Rishi Prasad R, Javeed Ahmad ]
+# Filename:		feedback.py
+# Functions:	[aruco_feedback_Cb, task2_goals_Cb, euclidean_distance, steering_angle, linear_vel_x, linear_vel_y, angular_vel, PID, angle_range_2pi, angle_range_pi, inverse_kinematics]
+# Nodes:		[aruco_feedback, task2_goals, controller, gazebo]
+
+
+######################## IMPORT MODULES ##########################
 import time
 import rospy
 import signal		# To handle Signals by OS/user
@@ -9,7 +35,6 @@ from geometry_msgs.msg import Wrench	# Message type used for publishing force ve
 from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 
-#import pid
 
 import numpy
 from time import sleep
@@ -18,10 +43,10 @@ import math		# If you find it useful
 from tf.transformations import euler_from_quaternion	# Convert angles
 
 
-
+#initialize node
 rospy.init_node('controller', anonymous=True)
 
-# Global variables
+######################## Global variables ##########################
 
 hola_x = 0
 hola_y = 0
@@ -41,6 +66,7 @@ left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 rate = rospy.Rate(2000)
 
 
+######################### functions ##########################
 
 def signal_handler(sig, frame):
 	print('Clean-up !')
@@ -186,7 +212,7 @@ def move2goal(x_goal, y_goal, theta_goal,pix2_range=False):
 	cleanup()
 	sleep(2.5)
 
-
+# main function
 def main():
 	global hola_x, hola_y, hola_theta, x_goals, y_goals, theta_goals
 
