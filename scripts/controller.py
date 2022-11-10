@@ -38,7 +38,7 @@ theta_goals = []
 right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
 left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
-rate = rospy.Rate(1000)
+rate = rospy.Rate(2000)
 
 
 
@@ -129,9 +129,12 @@ def PID(Kp, Ki, Kd, MV_bar=0):
 		e_prev = e
 		t_prev = t
     
+def angle_range_2pi(theta):
+	if theta < 0:
+		theta = theta + 2*math.pi
+	return theta
 
-
-def angle_range(theta):
+def angle_range_pi(theta):
     theta = theta%(2*math.pi) 
     if theta > math.pi or theta < -math.pi:
         theta = theta - 2*math.pi if theta > 0 else theta + 2*math.pi
@@ -148,10 +151,10 @@ def inverse_kinematics(v_x, v_y, w,kp=1):
 	return kp*forces
 	
 # The function moves the robot to the goal position and orientation
-def move2goal(x_goal, y_goal, theta_goal):
+def move2goal(x_goal, y_goal, theta_goal,pix2_range=False):
 	global hola_x, hola_y, hola_theta
 
-	theta_goal = angle_range(theta_goal)
+	pi_goal = angle_range_pi(theta_goal)
 	rospy.loginfo("Goal: x: %d, y: %d, theta: %f", x_goal, y_goal, theta_goal)
 	rospy.loginfo("Current: x: %d, y: %d, theta: %f", hola_x, hola_y, hola_theta)
 
@@ -165,9 +168,9 @@ def move2goal(x_goal, y_goal, theta_goal):
 	pid = PID(2, 0.00008,0.000008)
 	pid.send(None)
 	error =euclidean_distance(x_goal, y_goal,hola_x,hola_y) 
-	while error>= distance_tolerance or abs(hola_theta-theta_goal) > angle_tolerance:
+	while error>= distance_tolerance or abs(hola_theta-pi_goal) > angle_tolerance:
 		# print("x: ", hola_x, "y: ", hola_y, "theta: ", hola_theta)
-		forces = inverse_kinematics(linear_vel_x(x_goal, y_goal,error/5), linear_vel_y(x_goal, y_goal,error/5), pid.send([time.time(),hola_theta,theta_goal]),15)
+		forces = inverse_kinematics(linear_vel_x(x_goal, y_goal,error/5), linear_vel_y(x_goal, y_goal,error/5), pid.send([time.time(),angle_range_2pi(hola_theta) if pix2_range else hola_theta,theta_goal]),15)
 		f_force.force.x = forces[1][0]
 		r_force.force.x = forces[2][0]
 		l_force.force.x = forces[0][0]
@@ -195,7 +198,10 @@ def main():
 	while not rospy.is_shutdown():
 		for x_goal, y_goal, theta_goal in zip(x_goals, y_goals, theta_goals):
 			print(x_goal, y_goal, theta_goal)
-			move2goal(x_goal, y_goal, theta_goal)
+			theta_goal = angle_range_pi(theta_goal)
+			pix2_goal = angle_range_2pi(theta_goal)
+			pix2_range = abs(pix2_goal - angle_range_2pi(hola_theta))<abs(theta_goal - hola_theta)
+			move2goal(x_goal, y_goal,pix2_goal if pix2_range else theta_goal, pix2_range)
 		x_goals.clear()
 		y_goals.clear()
 		theta_goals.clear()
