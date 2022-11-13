@@ -20,7 +20,7 @@
 # Team ID:		HB_1023
 # Author List:	[ Chirutha Kottantharayil, Varghese Binu, Rishi Prasad R, Javeed Ahmad ]
 # Filename:		feedback.py
-# Functions:	[aruco_feedback_Cb, task2_goals_Cb, euclidean_distance, steering_angle, linear_vel_x, linear_vel_y, angular_vel, PID, angle_range_2pi, angle_range_pi, inverse_kinematics]
+# Functions:	[ main, callback ]
 # Nodes:		[aruco_feedback_node, gazebo]
 
 
